@@ -101,8 +101,7 @@
       top: 0;
       left: 0;
       z-index: 1;
-      /* 透過度：1にすると背景画像がはっきり表示されます */
-      opacity: 0.2;
+      opacity: 0.2; /* 1にすると背景がはっきり表示 */
       object-fit: cover;
     }
     
@@ -237,7 +236,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🦴 骨格パズルゲーム 🦴</h1>
+    <h1>🦴 骨格パズルゲーム（スマホ対応） 🦴</h1>
     <p>動物の骨格を組み立てて学ぼう！ドラッグまたはタッチして正しい位置に「🦴」を置いてみよう！</p>
     
     <div class="animal-select">
@@ -249,6 +248,7 @@
     <div class="game-area">
       <div class="game-container">
         <div class="game-board" id="gameBoard">
+          <!-- 初期はイヌの背景画像を表示 -->
           <img class="skeleton-outline" id="skeletonOutline" src="https://imgur.com/daJer8U.jpg" alt="骨格の輪郭">
         </div>
         
@@ -277,9 +277,9 @@
   </div>
 
   <script>
-    // グローバル変数
+    /* ここからJavaScriptコード：PCのマウス操作＋スマホのタッチ操作を両立 */
     let selectedBone = null;
-    let currentDraggedBone = null; // タッチ操作で動かすクローン
+    let currentDraggedBone = null; // タッチ操作で指に追従させるクローン
     let currentAnimal = 'dog';
     let score = 0;
     let totalBones = 0;
@@ -296,69 +296,67 @@
     const completionModal = document.getElementById('completionModal');
     const nextAnimalButton = document.getElementById('nextAnimalButton');
     const animalButtons = document.querySelectorAll('.animal-button');
-    
-    // 動物ごとのデータ（座標等はサンプルです）
+    /* 動物ごとのデータ（例） */
     const animalData = {
       dog: {
         outline: 'https://imgur.com/daJer8U.jpg',
         bones: [
-          { id: 'skull', name: '頭蓋骨', description: '脳を保護し、顔の形を形成する大切な骨です。', x: 380, y: 100, width: 80, height: 70 },
-          { id: 'spine', name: '脊椎', description: '背骨とも呼ばれ、多くの骨が連なった構造です。', x: 250, y: 130, width: 120, height: 40 },
-          { id: 'ribs', name: '肋骨', description: '内臓を保護するかご状の骨です。', x: 250, y: 180, width: 100, height: 80 },
-          { id: 'pelvis', name: '骨盤', description: '後ろ足と背骨をつなぐ重要な骨です。', x: 170, y: 140, width: 70, height: 50 },
-          { id: 'front_leg', name: '前足の骨', description: '肩甲骨、上腕骨、橈骨、尺骨などで構成されています。', x: 300, y: 270, width: 40, height: 100 },
-          { id: 'back_leg', name: '後ろ足の骨', description: '大腿骨、脛骨、腓骨などで構成されています。', x: 180, y: 250, width: 40, height: 120 },
-          { id: 'tail', name: '尾骨', description: '尾を形成する小さな骨が連なった構造です。', x: 100, y: 150, width: 60, height: 30 }
+          { id: 'skull', name: '頭蓋骨', description: '犬の頭蓋骨です。', x: 380, y: 100, width: 80, height: 70 },
+          { id: 'spine', name: '脊椎', description: '犬の脊椎です。', x: 250, y: 130, width: 120, height: 40 },
+          { id: 'ribs', name: '肋骨', description: '犬の肋骨です。', x: 250, y: 180, width: 100, height: 80 },
+          { id: 'pelvis', name: '骨盤', description: '犬の骨盤です。', x: 170, y: 140, width: 70, height: 50 },
+          { id: 'front_leg', name: '前足の骨', description: '犬の前足を構成する骨です。', x: 300, y: 270, width: 40, height: 100 },
+          { id: 'back_leg', name: '後ろ足の骨', description: '犬の後ろ足を構成する骨です。', x: 180, y: 250, width: 40, height: 120 },
+          { id: 'tail', name: '尾骨', description: '犬の尾を形成する骨です。', x: 100, y: 150, width: 60, height: 30 }
         ]
       },
       cat: {
         outline: 'https://imgur.com/vnIWddR.jpg',
         bones: [
-          { id: 'skull', name: '頭蓋骨', description: '猫の頭蓋骨は丸みがあり、大きな目窩があります。', x: 380, y: 80, width: 70, height: 60 },
-          { id: 'spine', name: '脊椎', description: '猫の脊椎は柔軟で体を自在に動かします。', x: 250, y: 100, width: 120, height: 30 },
-          { id: 'ribs', name: '肋骨', description: '猫の肋骨は内臓を守ります。', x: 250, y: 140, width: 90, height: 70 },
-          { id: 'pelvis', name: '骨盤', description: '猫の骨盤は後ろ足と連動して動きます。', x: 170, y: 110, width: 60, height: 40 },
-          { id: 'front_leg', name: '前足の骨', description: '猫の前足は敏捷さの鍵です。', x: 300, y: 220, width: 30, height: 90 },
-          { id: 'back_leg', name: '後ろ足の骨', description: '猫の後ろ足は走るために重要です。', x: 170, y: 200, width: 30, height: 100 },
-          { id: 'tail', name: '尾骨', description: '猫の尾はバランスを保ちます。', x: 100, y: 120, width: 70, height: 20 }
+          { id: 'skull', name: '頭蓋骨', description: '猫の頭蓋骨です。', x: 380, y: 80, width: 70, height: 60 },
+          { id: 'spine', name: '脊椎', description: '猫の脊椎です。', x: 250, y: 100, width: 120, height: 30 },
+          { id: 'ribs', name: '肋骨', description: '猫の肋骨です。', x: 250, y: 140, width: 90, height: 70 },
+          { id: 'pelvis', name: '骨盤', description: '猫の骨盤です。', x: 170, y: 110, width: 60, height: 40 },
+          { id: 'front_leg', name: '前足の骨', description: '猫の前足です。', x: 300, y: 220, width: 30, height: 90 },
+          { id: 'back_leg', name: '後ろ足の骨', description: '猫の後ろ足です。', x: 170, y: 200, width: 30, height: 100 },
+          { id: 'tail', name: '尾骨', description: '猫の尾骨です。', x: 100, y: 120, width: 70, height: 20 }
         ]
       },
       bird: {
         outline: 'https://imgur.com/TKLIVoB.jpg',
         bones: [
-          { id: 'skull', name: '頭蓋骨', description: '鶏の頭蓋骨は軽くて強靭です。', x: 380, y: 60, width: 60, height: 50 },
-          { id: 'spine', name: '脊椎', description: '鶏の脊椎は飛ぶために最適化されています。', x: 250, y: 80, width: 120, height: 30 },
-          { id: 'sternum', name: '胸骨', description: '胸骨は鶏が飛ぶための筋肉の付着部です。', x: 270, y: 110, width: 70, height: 60 },
-          { id: 'wings', name: '翼の骨', description: '翼の骨は飛行のための重要な構造です。', x: 330, y: 140, width: 100, height: 60 },
-          { id: 'legs', name: '足の骨', description: '鶏の足は歩行や走るために必要です。', x: 230, y: 180, width: 30, height: 100 },
-          { id: 'tail', name: '尾骨', description: '尾骨はバランスを取るのに役立ちます。', x: 150, y: 90, width: 50, height: 30 }
+          { id: 'skull', name: '頭蓋骨', description: '鶏の頭蓋骨です。', x: 380, y: 60, width: 60, height: 50 },
+          { id: 'spine', name: '脊椎', description: '鶏の脊椎です。', x: 250, y: 80, width: 120, height: 30 },
+          { id: 'sternum', name: '胸骨', description: '鶏の胸骨です。', x: 270, y: 110, width: 70, height: 60 },
+          { id: 'wings', name: '翼の骨', description: '鶏の翼を構成する骨です。', x: 330, y: 140, width: 100, height: 60 },
+          { id: 'legs', name: '足の骨', description: '鶏の足を構成する骨です。', x: 230, y: 180, width: 30, height: 100 },
+          { id: 'tail', name: '尾骨', description: '鶏の尾骨です。', x: 150, y: 90, width: 50, height: 30 }
         ]
       }
     };
     
-    // タッチ操作用のグローバル変数
-    let currentDraggedBone = null;
+    // -------------- タッチイベントの実装 -------------- //
+    let currentDraggedBone = null; // タッチ移動中の要素（クローン）
     
-    // タッチ開始処理（ドラッグ開始の代替）
     function handleTouchStart(e) {
-      e.preventDefault();
+      // (省略可能) e.preventDefault(); // ここで preventDefault を多用するとスクロールできなくなる
       selectedBone = this;
-      // 計算：タッチ開始位置と要素の位置差
+      
+      // タッチ開始位置と要素の位置を計算
       const touch = e.touches[0];
       const rect = this.getBoundingClientRect();
       selectedBone.touchOffsetX = touch.clientX - rect.left;
       selectedBone.touchOffsetY = touch.clientY - rect.top;
       
-      // ドラッグ用にクローンを作成
+      // クローンを作成してドラッグ中の見た目にする
       currentDraggedBone = this.cloneNode(true);
       currentDraggedBone.style.position = 'absolute';
       currentDraggedBone.style.zIndex = 1000;
       currentDraggedBone.style.left = rect.left + 'px';
       currentDraggedBone.style.top = rect.top + 'px';
-      gameBoard.appendChild(currentDraggedBone);
+      document.body.appendChild(currentDraggedBone);
     }
     
-    // タッチ移動処理
     function handleTouchMove(e) {
       if (!selectedBone || !currentDraggedBone) return;
       const touch = e.touches[0];
@@ -368,12 +366,13 @@
       currentDraggedBone.style.top = newTop + 'px';
     }
     
-    // タッチ終了処理
     function handleTouchEnd(e) {
       if (!selectedBone || !currentDraggedBone) return;
       const touch = e.changedTouches[0];
       let dropped = false;
       const dropZones = document.querySelectorAll('.drop-zone');
+      
+      // 指が離れた位置が正しいドロップゾーンか判定
       dropZones.forEach(zone => {
         const rect = zone.getBoundingClientRect();
         if (
@@ -387,20 +386,25 @@
           placeBone(selectedBone, zone);
         }
       });
+      
+      // ドロップ失敗
       if (!dropped) {
         currentDraggedBone.remove();
         selectedBone.classList.remove('selected');
+        boneInfo.textContent = '違う場所です。もう一度試してみよう！';
       }
+      
+      // 後片付け
       selectedBone = null;
       currentDraggedBone = null;
     }
     
-    // 骨ピース生成時にタッチイベントを追加
     function addTouchHandlers(boneElement) {
-      boneElement.addEventListener('touchstart', handleTouchStart, {passive: false});
+      // タッチ開始
+      boneElement.addEventListener('touchstart', handleTouchStart, { passive: false });
     }
     
-    // 初期化関数
+    // -------------- ゲーム初期化関連 -------------- //
     function initGame(animal) {
       gameBoard.innerHTML = '';
       gameBoard.appendChild(skeletonOutline);
@@ -408,10 +412,8 @@
       score = 0;
       bonePlaced = {};
       
-      // 背景画像更新
       skeletonOutline.src = animalData[animal].outline;
       
-      // ドロップゾーン作成
       totalBones = animalData[animal].bones.length;
       animalData[animal].bones.forEach(bone => {
         const dropZone = document.createElement('div');
@@ -424,17 +426,18 @@
         gameBoard.appendChild(dropZone);
       });
       
-      // 骨ピース生成（🦴絵文字）
+      // 骨ピースを生成
       animalData[animal].bones.forEach(bone => {
         const boneElement = document.createElement('div');
         boneElement.className = 'bone';
-        boneElement.setAttribute('draggable', 'true');
+        boneElement.setAttribute('draggable', 'true'); // PC向けドラッグ＆ドロップ
         boneElement.dataset.boneId = bone.id;
         boneElement.dataset.boneName = bone.name;
         boneElement.dataset.boneDescription = bone.description;
         
         boneElement.textContent = "🦴";
         
+        // PCのマウス操作
         boneElement.addEventListener('click', function() {
           if (selectedBone) {
             selectedBone.classList.remove('selected');
@@ -443,7 +446,6 @@
           this.classList.add('selected');
           boneInfo.textContent = `${bone.name}: ${bone.description}`;
         });
-        
         boneElement.addEventListener('dragstart', function(e) {
           selectedBone = this;
           this.classList.add('selected');
@@ -451,7 +453,7 @@
           e.dataTransfer.setData('text/plain', bone.id);
         });
         
-        // タッチイベントを追加
+        // スマホのタッチ操作
         addTouchHandlers(boneElement);
         
         boneBank.appendChild(boneElement);
@@ -465,6 +467,7 @@
       totalBonesDisplay.textContent = totalBones;
     }
     
+    // PC向けドラッグ処理
     gameBoard.addEventListener('dragover', function(e) {
       e.preventDefault();
     });
@@ -498,6 +501,7 @@
       }
     });
     
+    // 骨を配置
     function placeBone(bone, zone) {
       const boneId = bone.dataset.boneId;
       if (!bonePlaced[boneId]) {
@@ -527,11 +531,12 @@
         }
       }
       
-      selectedBone.classList.remove('selected');
+      bone.classList.remove('selected');
       selectedBone = null;
       boneInfo.textContent = `正解！ ${bone.dataset.boneName}を正しい位置に置きました！`;
     }
     
+    // 紙吹雪演出
     function createConfetti(element) {
       const rect = element.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -564,16 +569,19 @@
       }
     }
     
+    // クリア画面
     function showCompletionModal() {
-      finalScore.textContent = score;
-      finalTotal.textContent = totalBones;
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('finalTotal').textContent = totalBones;
       completionModal.style.display = 'flex';
     }
     
+    // リセット
     resetButton.addEventListener('click', function() {
       initGame(currentAnimal);
     });
     
+    // ヒント
     hintButton.addEventListener('click', function() {
       const unplacedBones = animalData[currentAnimal].bones.filter(bone => !bonePlaced[bone.id]);
       if (unplacedBones.length > 0) {
@@ -594,6 +602,7 @@
       }
     });
     
+    // 次の動物へ
     nextAnimalButton.addEventListener('click', function() {
       completionModal.style.display = 'none';
       const animals = Object.keys(animalData);
@@ -612,6 +621,7 @@
       initGame(currentAnimal);
     });
     
+    // 動物切り替えボタン
     animalButtons.forEach(button => {
       button.addEventListener('click', function() {
         const animal = this.dataset.animal;
@@ -624,12 +634,13 @@
       });
     });
     
-    // タッチイベントのグローバルリスナー（ドラッグ用）
-    document.addEventListener('touchmove', handleTouchMove, {passive: false});
-    document.addEventListener('touchend', handleTouchEnd, {passive: false});
+    // タッチイベント全体のリスナー（touchmove, touchend）
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
     
-    // 初期表示（初期は犬）
+    // 初期表示
     initGame(currentAnimal);
   </script>
 </body>
 </html>
+
